@@ -12,11 +12,15 @@ public class UDPLightSender : MonoBehaviour {
     public string lightServerNickname;
     public string lightServerAddress;
     public int lightServerPort; // = 9909;
+
+    public bool DEBUGSendToServer;
 	
 	// Initialises the light server client.
 	void Start () {
 
         Debug.Log("Light server address: " + lightServerAddress.ToString() + "\nLight server port: " + lightServerPort);
+        if (!DEBUGSendToServer)
+            Debug.LogWarning("Not sending light information to light server (DEBUGSendToServer = false)");
 
 		try {
 
@@ -44,8 +48,9 @@ public class UDPLightSender : MonoBehaviour {
         {
             if (lightServerConnection != null)
             {
-                lightServerConnection.SendTo(createLightUpdatePacket(), lightServerEndpoint);
-                Debug.Log("Sent data");
+                if (DEBUGSendToServer)
+                    lightServerConnection.SendTo(createLightUpdatePacket(), lightServerEndpoint);
+                //Debug.Log("Sent data");
 
             }
             else
