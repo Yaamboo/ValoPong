@@ -13,13 +13,13 @@ public class UDPLightSender : MonoBehaviour {
     public string lightServerAddress;
     public int lightServerPort; // = 9909;
 
-    public bool DEBUGSendToServer;
+    public bool ActuallySendToServer;
 	
 	// Initialises the light server client.
 	void Start () {
 
         Debug.Log("Light server address: " + lightServerAddress.ToString() + "\nLight server port: " + lightServerPort);
-        if (!DEBUGSendToServer)
+        if (!ActuallySendToServer)
             Debug.LogWarning("Not sending light information to light server (DEBUGSendToServer = false)");
 
 		try {
@@ -48,8 +48,10 @@ public class UDPLightSender : MonoBehaviour {
         {
             if (lightServerConnection != null)
             {
-                if (DEBUGSendToServer)
-                    lightServerConnection.SendTo(createLightUpdatePacket(), lightServerEndpoint);
+                byte[] packet = createLightUpdatePacket();
+
+                if (ActuallySendToServer)
+                    lightServerConnection.SendTo(packet, lightServerEndpoint);
                 //Debug.Log("Sent data");
 
             }
@@ -85,13 +87,32 @@ public class UDPLightSender : MonoBehaviour {
         startPos++;
         foreach (SphereCollider sc in spheres)
         {
+
+            int red, green, blue;
+            red = (int)(sc.renderer.material.color.r * 255);
+            if (red < 0)
+                red = 0;
+            if (red > 255)
+                red = 255;
+            green = (int)(sc.renderer.material.color.g * 255);
+            if (green< 0)
+                green = 0;
+            if (green > 255)
+                green = 255;
+            blue = (int)(sc.renderer.material.color.b * 255);
+            if (blue < 0)
+                blue = 0;
+            if (blue > 255)
+                blue = 255;
+
+
             //b[startPos] = 0; // light separator
             b[startPos + 0] = 1; // always 1
             b[startPos + 1] = (byte)(sc.GetComponent<ChangeColour>().lightId); // light id
             b[startPos + 2] = 0; // always 0
-            b[startPos + 3] = (byte)(sc.renderer.material.color.r * 255);
-            b[startPos + 4] = (byte)(sc.renderer.material.color.g * 255);
-            b[startPos + 5] = (byte)(sc.renderer.material.color.b * 255);
+            b[startPos + 3] = (byte)red;
+            b[startPos + 4] = (byte)green;
+            b[startPos + 5] = (byte)blue;
             i++;
             startPos += 6;
         }
