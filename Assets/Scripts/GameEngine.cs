@@ -28,14 +28,14 @@ public class GameEngine : MonoBehaviour {
 
     private GameObject ExcellentText;
 
-    private GameObject OhNoSound, PongSound;
+    private GameObject OhNoSound, PongSound, StartSound, WindSound;
 
     void OnGUI()
     {
         GUI.Box(new Rect(20, 20, 400, 30), "P1: " + p1Score, pointsStyle);
         GUI.Box(new Rect(Screen.width - 20 - 400, 20, 400, 30), "P2: " + p2Score, pointsStyle);
 
-        GUI.Box(new Rect(0, Screen.height - 50, Screen.width, 50), lightPosition.x + "," + lightPosition.y + "\n" + isDead +" " + playRestartTime);
+        //GUI.Box(new Rect(0, Screen.height - 50, Screen.width, 50), lightPosition.x + "," + lightPosition.y + "\n" + isDead +" " + playRestartTime);
     }
 
 	// Use this for initialization
@@ -47,6 +47,10 @@ public class GameEngine : MonoBehaviour {
 
         OhNoSound = gameObject.transform.FindChild("OhNoSound").gameObject;
         PongSound = gameObject.transform.FindChild("PongSound").gameObject;
+        StartSound = gameObject.transform.FindChild("StartSound").gameObject;
+        WindSound = gameObject.transform.FindChild("WindSound").gameObject;
+
+        Debug.Log(WindSound);
 
         // Create table of event lights , id => event light
         eventLights = new Hashtable();
@@ -54,9 +58,18 @@ public class GameEngine : MonoBehaviour {
         {
             eventLights.Add(cc.lightId, cc.gameObject);
         }
-        resetAnimations();
 
-        startBall();
+        resetAnimations();
+        isDead = true;
+        playRestartTime = System.DateTime.Now + System.TimeSpan.FromSeconds(1);
+        foreach (GameObject light in eventLights.Values)
+        {
+            light.animation.Stop();
+            light.animation.CrossFade("DeadAnimation", 0.2f);
+        }
+        StartSound.audio.Play();
+
+        //startBall();
 	}
 
     private void resetAnimations()
@@ -94,7 +107,11 @@ public class GameEngine : MonoBehaviour {
 
     private void startBall()
     {
-        lightPosition = new Vector2((p2PaddleID - p1PaddleID) / 2 + p1PaddleID, ballStartSpeed * Time.deltaTime);
+        if (Random.value >= 0.5)
+            lightPosition = new Vector2((p2PaddleID - p1PaddleID) / 2 + p1PaddleID, ballStartSpeed * Time.deltaTime);
+        else
+            lightPosition = new Vector2((p2PaddleID - p1PaddleID) / 2 + p1PaddleID, ballStartSpeed * -Time.deltaTime);
+        WindSound.audio.Play();
     }
 	
 	// Update is called once per frame
@@ -133,7 +150,7 @@ public class GameEngine : MonoBehaviour {
                 isDead = true;
             }
 
-            if (Input.GetKey(KeyCode.Space) && !isDead)
+            if (Input.GetKeyDown(KeyCode.Space) && !isDead)
             {
                 if (p1Cooldown <= System.DateTime.Now)
                 {
@@ -151,12 +168,13 @@ public class GameEngine : MonoBehaviour {
                         ExcellentText.animation.Play();
                         ExcellentText.audio.Play();
                     }
-                    else if (P1marginOfError <= 1)
+                    else if (P1marginOfError <= 2)
                     {
                         // good
                         lightPosition.y *= -1;
+                        lightPosition.y *= 1.15f;
                         p1Score += 500;
-                        this.audio.Play();
+                        PongSound.audio.Play();
                     }
                     else
                     {
@@ -166,7 +184,7 @@ public class GameEngine : MonoBehaviour {
                 p1Cooldown = System.DateTime.Now + cooldownPeriod;
 
             }
-            if (Input.GetKey(KeyCode.KeypadEnter) && !isDead)
+            if (Input.GetKeyDown(KeyCode.KeypadEnter) && !isDead)
             {
                 if (p2Cooldown <= System.DateTime.Now)
                 {
@@ -183,12 +201,13 @@ public class GameEngine : MonoBehaviour {
                         ExcellentText.audio.Play();
 
                     }
-                    else if (P2marginOfError <= 1)
+                    else if (P2marginOfError <= 2)
                     {
                         // good
                         lightPosition.y *= -1;
+                        lightPosition.y *= 1.15f;
                         p2Score += 500;
-                        this.audio.Play();
+                        PongSound.audio.Play();
                     }
                     else
                     {
@@ -200,11 +219,21 @@ public class GameEngine : MonoBehaviour {
 
             }
 
+            if (Input.GetKey(KeyCode.Escape))
+            {
+                isDead = true;
+                p1Score = 0;
+                p2Score = 0;
+                Application.LoadLevel(0);
+            }
+
             if (isDead == true)
             {
                 // fail
                 playRestartTime = System.DateTime.Now + System.TimeSpan.FromSeconds(3);
-                
+
+                WindSound.audio.Stop();
+
                 OhNoSound.audio.Play();
                 
                 foreach (GameObject light in eventLights.Values)
