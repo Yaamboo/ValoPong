@@ -150,7 +150,7 @@ public class GameEngine : MonoBehaviour {
                 isDead = true;
             }
 
-            if (Input.GetKeyDown(KeyCode.Space) && !isDead)
+            if (Input.GetButtonDown("Player 1 paddle") && !isDead)
             {
                 if (p1Cooldown <= System.DateTime.Now)
                 {
@@ -184,7 +184,7 @@ public class GameEngine : MonoBehaviour {
                 p1Cooldown = System.DateTime.Now + cooldownPeriod;
 
             }
-            if (Input.GetKeyDown(KeyCode.KeypadEnter) && !isDead)
+            if (Input.GetButtonDown("Player 2 paddle") && !isDead)
             {
                 if (p2Cooldown <= System.DateTime.Now)
                 {
@@ -218,6 +218,7 @@ public class GameEngine : MonoBehaviour {
                 p2Cooldown = System.DateTime.Now + cooldownPeriod;
 
             }
+            
 
             if (Input.GetKey(KeyCode.Escape))
             {
@@ -279,46 +280,11 @@ public class GameEngine : MonoBehaviour {
             int nextLight = currentLight + 1;
             if (nextLight > 35)
                 nextLight -= 36;
-            /*
-            float curIntensity, prevIntensity, nextIntensity;
-
-            if (lightPosition.x <= currentLight)
-            {
-                curIntensity = 1 - (currentLight - lightPosition.x);
-                prevIntensity = 1 - (lightPosition.x - prevLight);
-                nextIntensity = 0;
-            }
-            else
-            {
-                curIntensity = 1 - (lightPosition.x - currentLight);
-                prevIntensity = 0;
-                nextIntensity = 1 - (nextLight - lightPosition.x);
-            }
-
-            // ugly hack
-            if (nextIntensity > 35)
-                nextIntensity -= 36;
-            if (prevIntensity > 35)
-                prevIntensity -= 36;
-
-
-            if (currentLight > 35)
-                currentLight -= 36;
-            if (currentLight < 0)
-                currentLight += 36;
-
-            //Debug.Log(prevLight + ", " + currentLight + ", " + nextLight);
-
-            //Debug.Log(prevIntensity + ", " + curIntensity + ", " + nextIntensity);
-
-            /*getLight(prevLight).renderer.material.color = new Color(prevIntensity, prevIntensity, prevIntensity);
-            getLight(currentLight).renderer.material.color = new Color(curIntensity, curIntensity, curIntensity);
-            getLight(nextLight).renderer.material.color = new Color(nextIntensity, nextIntensity, nextIntensity);*/
 
             if (lightPosition.y >= 0 && nextLight < p2PaddleID)
-                getLight(nextLight).animation.Play("LightPositionAnimation");
+                getLight(nextLight).animation.CrossFade("LightPositionAnimation", 0.2f);
             else if (lightPosition.y < 0 && prevLight > p1PaddleID)
-                getLight(prevLight).animation.Play("LightPositionAnimation");
+                getLight(prevLight).animation.CrossFade("LightPositionAnimation", 0.2f);
         }
     }
 }

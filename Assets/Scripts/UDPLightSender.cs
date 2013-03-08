@@ -14,17 +14,32 @@ public class UDPLightSender : MonoBehaviour {
     public int lightServerPort; // = 9909;
 
     public bool ActuallySendToServer;
-	
-	// Initialises the light server client.
-	void Start () {
+
+    private SphereCollider[] spheres;
+
+	/// <summary>
+	/// Initialisation of the light server client.
+	/// </summary>
+	void Start ()
+    {
+        // get all the light spheres from the children
+        spheres = gameObject.GetComponentsInChildren<SphereCollider>();
+
+        // Load settings for the server
+        loadServerSettings();
+
+        // Set the ip address
+        lightServerIPAddress = findLightServerIPAddress();
+
+        // random nickname
+        lightServerNickname += (int)Random.Range(1000, 9999);
+
 
         Debug.Log("Light server address: " + lightServerAddress.ToString() + "\nLight server port: " + lightServerPort);
         if (!ActuallySendToServer)
-            Debug.LogWarning("Not sending light information to light server (DEBUGSendToServer = false)");
+            Debug.LogWarning("Not sending light information to light server (ActuallySendToServer = false)");
 
 		try {
-
-            lightServerIPAddress = IPAddress.Parse(lightServerAddress);
 
             if (lightServerIPAddress != null && lightServerPort >= 1024 && lightServerPort <= 65535)
             {
@@ -40,9 +55,56 @@ public class UDPLightSender : MonoBehaviour {
             Debug.LogException(e);
 		}
 	}
+
+    /// <summary>
+    /// Loads the settings set by the player.
+    /// </summary>
+    private void loadServerSettings()
+    {
+        lightServerAddress = PlayerPrefs.GetString("lightServerAddress", "melmacian.net");
+        try
+        {
+            lightServerPort = int.Parse(PlayerPrefs.GetString("lightServerPort", "9909"));
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+            lightServerPort = 0;
+        }
+        int sendData = PlayerPrefs.GetInt("sendData", 1);
+        if (sendData == 0)
+            ActuallySendToServer = false;
+        else
+            ActuallySendToServer = true;
+    }
+
+    /// <summary>
+    /// Finds the light server ip address from its hostname.
+    /// </summary>
+    /// <returns>the IPAddress of the light server</returns>
+    private IPAddress findLightServerIPAddress()
+    {
+        try
+        {
+            IPAddress[] ips = Dns.GetHostAddresses(lightServerAddress);
+            foreach (IPAddress ip in ips)
+            {
+                return ip;
+            }
+            return null;
+            //lightServerIPAddress = IPAddress.Parse(lightServerAddress);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+            return null;
+        }
+    }
 	
-	// Send the light information to the light server
-	void Update () {
+	/// <summary>
+    /// Send the light information to the light server
+	/// </summary>
+    void Update () {
 
         try
         {
@@ -64,11 +126,13 @@ public class UDPLightSender : MonoBehaviour {
         }
 	}
 
-    // Creates a light update packet.
+    /// <summary>
+    /// Creates a light update packet. The format can be found for example at https://github.com/epeli/effectserver/blob/master/examples/python.py
+    /// </summary>
+    /// <returns>byte array containing all the information needed by the server</returns>
     private byte[] createLightUpdatePacket()
     {
-        // Todo: tämä kaikki voitaisiin tehdä vain kerran, jos halutaan optimoida
-        SphereCollider[] spheres = gameObject.GetComponentsInChildren<SphereCollider>();
+        
                               // 3 bits + nickname length + 7 bits / light
         int byteArrayLength = 3 + lightServerNickname.Length + 6 * spheres.Length;
         byte[] b = new byte[byteArrayLength];
@@ -79,7 +143,6 @@ public class UDPLightSender : MonoBehaviour {
         {
             b[j + 2] = (byte)lightServerNickname[j];
         }
-//        b[lightServerNickname.Length + 2] = 0; // nickname separator
         
         int i = 0;
         int startPos = lightServerNickname.Length + 2;
@@ -106,7 +169,6 @@ public class UDPLightSender : MonoBehaviour {
                 blue = 255;
 
 
-            //b[startPos] = 0; // light separator
             b[startPos + 0] = 1; // always 1
             b[startPos + 1] = (byte)(sc.GetComponent<ChangeColour>().lightId); // light id
             b[startPos + 2] = 0; // always 0
@@ -116,21 +178,14 @@ public class UDPLightSender : MonoBehaviour {
             i++;
             startPos += 6;
         }
-        /*
-        if (spheres.Length > 1)
-        {
-            //Debug.Log("jou");
-            firstSphere = spheres[1];
-            b = new byte[] { 1, 0, 111, 0, 1, 0, 0, (byte)(firstSphere.renderer.material.color.r * 255), (byte)(firstSphere.renderer.material.color.g * 255), (byte)(firstSphere.renderer.material.color.b * 255) };
-        }
-        else
-        {
-        }
-        */
-        printPacket(b);
+        //printPacket(b); // uncomment to debug
         return b;
     }
 
+    /// <summary>
+    /// A debug method for printing the sent light packets
+    /// </summary>
+    /// <param name="byteArray">the light packet to be printed</param>
     private void printPacket(byte[] byteArray)
     {
         System.Text.StringBuilder sb = new System.Text.StringBuilder("Sending following bytes to server:\n");
